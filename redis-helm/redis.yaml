@@ -13,7 +13,7 @@ spec:
   replicationFactors: 1 
   
   kubernetesConfig:
-    image: quay.io/opstree/redis:7.2.4 # Community maintained free image
+    image: quay.io/opstree/redis:v8.4.2 # Community maintained free image
     imagePullPolicy: IfNotPresent
     resources:
       requests:
