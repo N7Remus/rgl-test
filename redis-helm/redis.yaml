@@ -1,0 +1,34 @@
+apiVersion: redis.redis.opstreelabs.in/v1beta1
+kind: RedisCluster
+metadata:
+  name: my-redis-cluster
+  namespace: redis
+spec:
+  # This is where you change your replica count
+  # 'size' refers to the number of Master nodes
+  clusterSize: 3 
+  
+  # 'replicationFactors' is the number of replicas per master
+  # Total pods = clusterSize * (1 + replicationFactors)
+  replicationFactors: 1 
+  
+  kubernetesConfig:
+    image: quay.io/opstree/redis:7.2.4 # Community maintained free image
+    imagePullPolicy: IfNotPresent
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+  storage:
+    volumeClaimTemplate:
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 1Gi
+  redisExporter:
+    enabled: true
+    image: quay.io/opstree/redis-exporter:v1.58.0
