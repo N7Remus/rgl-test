@@ -31,4 +31,4 @@ spec:
             storage: 1Gi
   redisExporter:
     enabled: true
-    image: quay.io/opstree/redis-exporter:1.58.0
+    image: quay.io/opstree/redis-exporter:v1.81.0
