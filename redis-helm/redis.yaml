@@ -10,8 +10,7 @@ spec:
   
   # 'replicationFactors' is the number of replicas per master
   # Total pods = clusterSize * (1 + replicationFactors)
-  replicationFactors: 1 
-  
+ 
   kubernetesConfig:
     image: quay.io/opstree/redis:v8.4.2 # Community maintained free image
     imagePullPolicy: IfNotPresent
