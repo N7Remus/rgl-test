@@ -13,6 +13,8 @@
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@mui/material": "^7.3.5",
+    "client": "^0.0.1",
+    "express": "^5.2.1",
     "graphology": "^0.26.0",
     "lodash": "^4.17.21",
     "react": "^19.2.0",
@@ -20,6 +22,7 @@
     "react-grid-layout": "^2.1.0",
     "rollup-plugin-visualizer": "^6.0.5",
     "sigma": "^3.0.2",
+    "socket.io": "^4.8.3",
     "socket.io-client": "^4.8.2"
   },
   "devDependencies": {

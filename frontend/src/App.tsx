@@ -2,52 +2,37 @@ import { Button } from "@mui/material";
 import { useEffect, useMemo, useState } from "react";
 import ReactGridLayout, { Layout, useContainerWidth } from "react-grid-layout";
 import { aspectRatio, LayoutConstraint } from "react-grid-layout/core";
+import { io } from "socket.io-client";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
+//import Header from "./components/Header"
 
+const socket = io("http://localhost:4000");
 
 interface layoutItem {
-
-  i: string,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-  constraints: LayoutConstraint[]
+  i: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  constraints: LayoutConstraint[];
 }
+
 interface Item {
-  key: string, // peerid-mode
-  label: string, // name 
-  color: string
+  key: string;
+  label: string;
+  color: string;
 }
 
 export default function MyGrid() {
   const { width, containerRef, mounted } = useContainerWidth();
-  // Pre-create constraint instances to avoid recreating on each render
   const constraints16x9 = useMemo(() => [aspectRatio(16 / 9)], []);
+
   const [rowHeight, setRowHeight] = useState(30);
   const [videoCount, setVideoCount] = useState(1);
-  function addXXX() {
-    setXXX(xxx + 1);
-  }
-  function removeXXX() {
-    if (xxx > 1)
-      setXXX(xxx - 1);
-  }
-
-  function addVideoCount() {
-    setVideoCount(videoCount + 1);
-  }
-
-  function removeVideoCount() {
-    if (videoCount > 1)
-      setVideoCount(videoCount - 1);
-  }
 
   let tmpXxx = 1;
-  while (videoCount > (tmpXxx * tmpXxx)) {
-    tmpXxx++;
-  }
+  while (videoCount > tmpXxx * tmpXxx) tmpXxx++;
 
   const [xxx, setXXX] = useState(tmpXxx);
 
@@ -55,76 +40,111 @@ export default function MyGrid() {
   const rows = xxx;
   const standardWidth = 1;
   const fullWidth = standardWidth * cols;
-  const standardHeight = 1;
-  let colFill = 0;
-  let nextRow = 0;
 
-  function colorPick(x: boolean, y: boolean) {
-    if (x) {
-      if (y)
-        return '#ff0000';
-      else {
-        return '#0000ff';
-      }
-    } else if (y) {
-      return '#00ff00';
-    }
-    return '#00ffff';
-  }
-
-  function randomColor() {
-    let colors = [
-      // '#ff0000', '#00ff00', '#0000ff',
-      "#e74c3c",
-      "#c2e73cff",
-      "#1c64d7ff",
-      "#5c5d5fff"
-    ];
-    return colors[Math.floor(Math.random() * colors.length)];
-  }
-
-  async function generateLayout() {
-    console.log('generateLayout');
-    let tmpItemLayout: Layout[] = [];
-    let tmpItems: Item[] = [];
-
-    let tmpXxx = 1;
-    while (videoCount > (tmpXxx * tmpXxx)) {
-      tmpXxx++;
-    }
-
-    for (let i = 0; i < videoCount; i++) {
-      let newName: Layout = {
-        i: "video" + (i),
-        x: colFill,
-        y: nextRow,
-        w: standardWidth,
-        h: standardHeight,
-        constraints: constraints16x9
-      };
-      tmpItemLayout.push(newName);
-
-      let newN = { key: "video" + (i), label: "16:9 Video" + (i), color: colorPick(colFill % 2 === 0, nextRow % 2 === 0) };
-      tmpItems.push(newN);
-
-      colFill++;
-      if (colFill >= tmpXxx) {
-        nextRow++;
-        colFill = 0;
-      }
-    }
-    console.log('generateLayout - value update');
-    console.log('generateLayout - value update', tmpItemLayout, tmpItems);
-    setLayoutState(tmpItemLayout);
-    setItems(tmpItems);
-    setXXX(tmpXxx);
-  }
-
-  // 16:9 widescreen items
   const [layout, setLayoutState] = useState<Layout[]>([]);
   const [items, setItems] = useState<Item[]>([]);
 
-  // generateLayout();
+  //állapotváltás
+  const [prevState, setPrevState] = useState<{
+    layout: Layout[];
+    items: Item[];
+    xxx: number;
+    videoCount: number;
+  } | null>(null);
+
+  let colFill = 0;
+  let nextRow = 0;
+
+  //állapotmentes
+  function savePrevState() {
+    if (!prevState) {
+      setPrevState({
+        layout: layout,
+        items: items,
+        xxx: xxx,
+        videoCount: videoCount,
+      });
+    }
+  }
+
+  function addXXX() {
+    savePrevState();
+    const newVal = xxx + 1;
+    setXXX(newVal);
+    emitState(layout, items, newVal, videoCount);
+  }
+
+  function removeXXX() {
+    if (xxx > 1) {
+      savePrevState();
+      const newVal = xxx - 1;
+      setXXX(newVal);
+      emitState(layout, items, newVal, videoCount);
+    }
+  }
+
+  function addVideoCount() {
+    savePrevState();
+    const newVal = videoCount + 1;
+    setVideoCount(newVal);
+    emitState(layout, items, xxx, newVal);
+  }
+
+  function removeVideoCount() {
+    if (videoCount > 1) {
+      savePrevState();
+      const newVal = videoCount - 1;
+      setVideoCount(newVal);
+      emitState(layout, items, xxx, newVal);
+    }
+  }
+
+  function emitState(l: Layout[], it: Item[], x: number, v: number) {
+    savePrevState();
+    socket.emit("state:change", { layout: l, items: it, xxx: x, videoCount: v });
+  }
+
+  function colorPick(x: boolean, y: boolean) {
+    if (x) return y ? "#ff0000" : "#0000ff";
+    if (y) return "#00ff00";
+    return "#00ffff";
+  }
+
+  function generateAndSyncLayout() {
+    savePrevState();
+    socket.emit("generate:layout", { videoCount });
+  }
+
+  function toggleHistory() {
+    if (prevState) {
+      //hisotry vissza
+      const currentState = {
+        layout: layout,
+        items: items,
+        xxx: xxx,
+        videoCount: videoCount,
+      };
+      setLayoutState(prevState.layout);
+      setItems(prevState.items);
+      setXXX(prevState.xxx);
+      setVideoCount(prevState.videoCount);
+      emitState(prevState.layout, prevState.items, prevState.xxx, prevState.videoCount);
+      setPrevState(currentState); // toggle kész, most ez az előző állapot
+    }
+  }
+
+  //szerver felol
+  useEffect(() => {
+    socket.on("state:update", (data) => {
+      if (data.layout) setLayoutState(data.layout);
+      if (data.items) setItems(data.items);
+      if (data.xxx) setXXX(data.xxx);
+      if (data.videoCount) setVideoCount(data.videoCount);
+    });
+    return () => {
+      socket.off("state:update");
+    };
+  }, []);
 
   const children = useMemo(
     () =>
@@ -136,39 +156,61 @@ export default function MyGrid() {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            objectFit: 'contain'
+            objectFit: "contain",
           }}
         >
-          <video style={{width:'100%', height: '100%'}} autoPlay muted loop/* controls */ >
-              <source src="http://localhost/flower.webm" type="video/mp4"/>
+          <video style={{ width: "100%", height: "100%" }} autoPlay muted loop>
+            <source src="http://localhost/flower.webm" type="video/mp4" />
           </video>
-          {/* <span className="text" style={{ color: "white", fontWeight: "bold" }}>
-            {item.label}
-          </span> */}
         </div>
       )),
-    [layout]
+    [items]
   );
 
-  useEffect(
-    () => {
-      // setMaxHeight(window.innerHeight);
-      console.log('width', width);
-      const v = Math.floor(width / (16 / 9) / rows)
-      setRowHeight(v)
-      console.log('rowh', v)
+  useEffect(() => {
+    if (!width) return;
+    const v = Math.floor(width / (16 / 9) / rows);
+    setRowHeight(v);
+  }, [layout, xxx, width]);
 
-
-    }, [layout, xxx, width]);
   return (
     <>
-      {/* <div ref={containerRef} style={{ minHeight: '360px', minWidth: '640px', maxHeight: '360px', maxWidth: '640px', textAlign: "center", margin: "auto", overflow: 'hidden' }}> */}
-      <div ref={containerRef} style={{
-        aspectRatio: '16/9', overflow: 'hidden', margin: 'auto', maxHeight: '720px',
-        border: 'red', borderStyle: 'dotted'
-
-
+      <div style={{
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        gap: "8px",
+        height: "48px",
+        padding: "0 16px",
+        backgroundColor: "#FFD700",
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 1100,
+        boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
       }}>
+
+        <Button onClick={addVideoCount}>v+ {videoCount}</Button>
+        <Button onClick={addXXX}>Increase Grid</Button>
+        <Button onClick={generateAndSyncLayout}>Reorganize Grid {xxx}</Button>
+        <Button onClick={removeXXX}>Decrease Grid</Button>
+        <Button onClick={removeVideoCount}>v-</Button>
+        <Button onClick={toggleHistory}>History Back</Button>
+      </div>
+
+      <div
+        ref={containerRef}
+        style={{
+          aspectRatio: "16/9",
+          overflow: "hidden",
+          margin: "auto",
+          maxHeight: "720px",
+          border: "red",
+          borderStyle: "dotted",
+        }}
+      >
+
         {mounted && (
           <ReactGridLayout
             layout={layout}
@@ -176,67 +218,34 @@ export default function MyGrid() {
             gridConfig={{ cols: fullWidth, rowHeight: rowHeight, margin: [0, 0] }}
             dragConfig={{ bounded: true }}
             resizeConfig={{ enabled: true, handles: ["s", "w", "e", "n", "sw", "nw", "se", "ne"] }}
-            onLayoutChange={
-              (l) => { 
-                console.log(l);
-                setLayoutState(l) 
-              }
-            }
+            onLayoutChange={(newLayout) => {
+              savePrevState();
+              setLayoutState(newLayout);
+              emitState(newLayout, items, xxx, videoCount);
+            }}
             constraints={constraints16x9}
           >
             {children}
           </ReactGridLayout>
         )}
       </div>
+
       <div style={{ textAlign: "center", margin: "auto" }}>
-        <Button onClick={addVideoCount}>
-          v+ {videoCount}
-        </Button>
-        <Button onClick={addXXX}>
-          Increase Grid
-        </Button>
-        <Button onClick={generateLayout}>
-          Reorganize Grid {xxx}
-        </Button>
-        <Button onClick={removeXXX}>
-          Decrease Grid
-        </Button>
-        <Button onClick={removeVideoCount}>
-          v-
-        </Button>
+        <Button disabled>Apply to Live Layout</Button>
+        <Button disabled>Reset to Live layout</Button>
       </div>
+
       <div style={{ textAlign: "center", margin: "auto" }}>
-        <Button disabled>
-          Apply to Live Layout
-        </Button>
-        <Button disabled>
-          Reset to Live layout
-        </Button>
+        <Button disabled>360p</Button>
+        <Button disabled>HD (720p)</Button>
+        <Button disabled>900p</Button>
+        <Button disabled>FHD (1080p)</Button>
       </div>
+
       <div style={{ textAlign: "center", margin: "auto" }}>
-        <Button disabled>
-          360p
-        </Button>
-        <Button disabled>
-          HD (720p)
-        </Button>
-        <Button disabled>
-          900p
-        </Button>
-        <Button disabled>
-          FHD (1080p)
-        </Button>
-      </div>
-      <div style={{ textAlign: "center", margin: "auto" }}>
-        <Button disabled>
-          Start Webinar
-        </Button>
-        <Button disabled>
-          Pause Webinar
-        </Button>
-        <Button disabled>
-          Stop Webinar
-        </Button>
+        <Button disabled>Start Webinar</Button>
+        <Button disabled>Pause Webinar</Button>
+        <Button disabled>Stop Webinar</Button>
       </div>
     </>
   );
