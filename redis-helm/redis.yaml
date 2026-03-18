@@ -6,7 +6,7 @@ metadata:
 spec:
   # This is where you change your replica count
   # 'size' refers to the number of Master nodes
-  clusterSize: 3 
+  clusterSize: 1 
   
   # 'replicationFactors' is the number of replicas per master
   # Total pods = clusterSize * (1 + replicationFactors)
