@@ -6,7 +6,7 @@ metadata:
 data:
   # The key is the 'filename', the value is the block of text
   env-file: |
-    REDIS_HOST=my-redis-cluster-leader.redis.svc.cluster.local
+    REDIS_HOST=single-redis.redis.svc.cluster.local
     REDIS_PORT=6379
     REDIS_DB=0
     LOGFILE=log/log.txt
