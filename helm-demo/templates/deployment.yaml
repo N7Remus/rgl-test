@@ -34,8 +34,7 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           volumeMounts:
             - name: config-vol
-              mountPath: /app/
-              subPath: .env
+              mountPath: /app/.env
           ports:
             - name: http
               containerPort: {{ .Values.containerPort }}
