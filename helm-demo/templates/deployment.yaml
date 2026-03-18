@@ -35,6 +35,7 @@ spec:
           volumeMounts:
             - name: config-vol
               mountPath: /app/.env
+              subPath: .env          
           ports:
             - name: http
               containerPort: {{ .Values.containerPort }}
