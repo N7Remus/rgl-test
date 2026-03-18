@@ -20,6 +20,14 @@ spec:
         app: {{ template "helm-guestbook.name" . }}
         release: {{ .Release.Name }}
     spec:
+      volumes:
+        - name: config-vol
+          configMap:
+            name: config-config
+            items:
+              - key: env-file  # Must match the key in the ConfigMap data
+                path: .env      # This creates /app/.env
+
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -27,7 +35,6 @@ spec:
           volumeMounts:
             - name: config-vol
               mountPath: /app/
-              subPath: .env
           ports:
             - name: http
               containerPort: {{ .Values.containerPort }}
