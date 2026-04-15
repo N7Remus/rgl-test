@@ -1,0 +1,9 @@
+{
+	"redis": {
+		"host": "hostname",
+		"port": 7001,
+		"password": "password"
+	},
+	"liveReload": true
+	
+}
